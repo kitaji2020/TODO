@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TODOアプリ</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #f093fb 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 560px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 24px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      letter-spacing: -0.5px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.95);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+      backdrop-filter: blur(10px);
+    }
+
+    /* --- Input area --- */
+    .input-area {
+      margin-bottom: 20px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .input-row input {
+      flex: 1;
+      padding: 11px 16px;
+      font-size: 1rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #fafafa;
+    }
+
+    .input-row input:focus { border-color: #667eea; background: #fff; }
+
+    .add-btn {
+      padding: 11px 20px;
+      font-size: 1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s, transform 0.1s;
+      box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+    }
+
+    .add-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .add-btn:active { transform: translateY(0); }
+
+    /* --- Due date row --- */
+    .due-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .due-row span {
+      font-size: 0.82rem;
+      color: #888;
+      white-space: nowrap;
+    }
+
+    .due-row input[type="date"] {
+      flex: 1;
+      padding: 7px 12px;
+      font-size: 0.9rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      outline: none;
+      background: #fafafa;
+      color: #333;
+      transition: border-color 0.2s;
+    }
+
+    .due-row input[type="date"]:focus { border-color: #667eea; background: #fff; }
+
+    /* --- Priority selector --- */
+    .priority-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .priority-row span {
+      font-size: 0.82rem;
+      color: #888;
+      white-space: nowrap;
+    }
+
+    .priority-btn {
+      flex: 1;
+      padding: 6px 0;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: #f0f0f0;
+      color: #666;
+    }
+
+    .priority-btn[data-p="high"]   { color: #e55; }
+    .priority-btn[data-p="medium"] { color: #f90; }
+    .priority-btn[data-p="low"]    { color: #4caf50; }
+
+    .priority-btn.selected[data-p="high"]   { background: #ffe5e5; border-color: #e55; color: #c00; }
+    .priority-btn.selected[data-p="medium"] { background: #fff3e0; border-color: #f90; color: #c77000; }
+    .priority-btn.selected[data-p="low"]    { background: #e8f5e9; border-color: #4caf50; color: #2e7d32; }
+
+    /* --- Filters --- */
+    .filters {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filters button {
+      padding: 5px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border: 2px solid #e0e0e0;
+      border-radius: 20px;
+      background: #fff;
+      cursor: pointer;
+      color: #888;
+      transition: all 0.15s;
+    }
+
+    .filters button.active {
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(102,126,234,0.3);
+    }
+
+    /* --- Todo items --- */
+    .todo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: 12px;
+      padding: 12px 14px;
+      border-left: 5px solid #ddd;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .todo-item:hover { transform: translateX(2px); }
+
+    .todo-item.priority-high   { border-left-color: #e55; background: linear-gradient(to right, #fff5f5, #fff); }
+    .todo-item.priority-medium { border-left-color: #f90; background: linear-gradient(to right, #fffbf0, #fff); }
+    .todo-item.priority-low    { border-left-color: #4caf50; background: linear-gradient(to right, #f0fff4, #fff); }
+
+    .todo-item.done { opacity: 0.45; }
+
+    .todo-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #667eea;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .todo-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .todo-text {
+      font-size: 0.97rem;
+      color: #1a1a1a;
+      word-break: break-word;
+    }
+
+    .todo-item.done .todo-text {
+      text-decoration: line-through;
+      color: #aaa;
+    }
+
+    .priority-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-top: 4px;
+    }
+
+    .badge-high   { background: #ffe5e5; color: #c00; }
+    .badge-medium { background: #fff3e0; color: #c77000; }
+    .badge-low    { background: #e8f5e9; color: #2e7d32; }
+
+    .due-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-top: 4px;
+      margin-left: 4px;
+      background: #eff3ff;
+      color: #4f7ef7;
+    }
+
+    .due-badge.overdue  { background: #ffe5e5; color: #c00; }
+    .due-badge.today    { background: #fff3e0; color: #c77000; }
+    .due-badge.soon     { background: #fff8e1; color: #f57c00; }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #ccc;
+      font-size: 1rem;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .delete-btn:hover { color: #e55; background: #ffe5e5; }
+
+    .empty {
+      text-align: center;
+      color: #bbb;
+      padding: 40px 0;
+      font-size: 0.95rem;
+    }
+
+    .footer {
+      margin-top: 14px;
+      font-size: 0.82rem;
+      color: #aaa;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 TODOアプリ</h1>
+
+    <div class="card">
+      <div class="input-area">
+        <div class="input-row">
+          <input id="taskInput" type="text" placeholder="タスクを入力..." maxlength="200">
+          <button class="add-btn" onclick="addTask()">＋ 追加</button>
+        </div>
+        <div class="due-row">
+          <span>期日：</span>
+          <input id="dueInput" type="date">
+        </div>
+        <div class="priority-row">
+          <span>重要度：</span>
+          <button class="priority-btn selected" data-p="high"   onclick="selectPriority('high')">🔴 高</button>
+          <button class="priority-btn"          data-p="medium" onclick="selectPriority('medium')">🟡 中</button>
+          <button class="priority-btn"          data-p="low"    onclick="selectPriority('low')">🟢 低</button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <button class="active" data-filter="all"    onclick="setFilter('all')">すべて</button>
+        <button               data-filter="active"  onclick="setFilter('active')">未完了</button>
+        <button               data-filter="done"    onclick="setFilter('done')">完了済み</button>
+        <button               data-filter="high"    onclick="setFilter('high')">🔴 高</button>
+        <button               data-filter="medium"  onclick="setFilter('medium')">🟡 中</button>
+        <button               data-filter="low"     onclick="setFilter('low')">🟢 低</button>
+      </div>
+
+      <div class="todo-list" id="todoList"></div>
+
+      <div class="footer" id="footer"></div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'simple_todos_v2';
+    const PRIORITY_LABELS = { high: '高', medium: '中', low: '低' };
+    let filter = 'all';
+    let selectedPriority = 'high';
+    let tasks = load();
+
+    function load() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+      catch { return []; }
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    }
+
+    function selectPriority(p) {
+      selectedPriority = p;
+      document.querySelectorAll('.priority-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.p === p);
+      });
+    }
+
+    function addTask() {
+      const input = document.getElementById('taskInput');
+      const text = input.value.trim();
+      if (!text) return;
+      const due = document.getElementById('dueInput').value || null;
+      tasks.unshift({ id: Date.now(), text, done: false, priority: selectedPriority, due });
+      save();
+      render();
+      input.value = '';
+      input.focus();
+    }
+
+    function toggleTask(id) {
+      const task = tasks.find(t => t.id === id);
+      if (task) { task.done = !task.done; save(); render(); }
+    }
+
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      save();
+      render();
+    }
+
+    function setFilter(f) {
+      filter = f;
+      document.querySelectorAll('.filters button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === f);
+      });
+      render();
+    }
+
+    function render() {
+      const list = document.getElementById('todoList');
+      const filtered = tasks.filter(t => {
+        if (filter === 'active') return !t.done;
+        if (filter === 'done')   return t.done;
+        if (filter === 'high')   return t.priority === 'high';
+        if (filter === 'medium') return t.priority === 'medium';
+        if (filter === 'low')    return t.priority === 'low';
+        return true;
+      });
+
+      // 重要度順（高→中→低）、未完了優先でソート
+      const order = { high: 0, medium: 1, low: 2 };
+      filtered.sort((a, b) => {
+        if (a.done !== b.done) return a.done ? 1 : -1;
+        return (order[a.priority] ?? 1) - (order[b.priority] ?? 1);
+      });
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="empty">タスクがありません</div>';
+      } else {
+        list.innerHTML = filtered.map(t => `
+          <div class="todo-item priority-${t.priority ?? 'low'} ${t.done ? 'done' : ''}">
+            <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})">
+            <div class="todo-body">
+              <div class="todo-text">${escHtml(t.text)}</div>
+              <span class="priority-badge badge-${t.priority ?? 'low'}">
+                ${{ high:'🔴 高', medium:'🟡 中', low:'🟢 低' }[t.priority ?? 'low']}
+              </span>${dueBadge(t.due)}
+            </div>
+            <button class="delete-btn" onclick="deleteTask(${t.id})" title="削除">✕</button>
+          </div>
+        `).join('');
+      }
+
+      const total = tasks.length;
+      const done = tasks.filter(t => t.done).length;
+      document.getElementById('footer').textContent =
+        total ? `${done} / ${total} 件完了` : '';
+    }
+
+    function dueBadge(due) {
+      if (!due) return '';
+      const today = new Date().toISOString().slice(0, 10);
+      const diff = (new Date(due) - new Date(today)) / 86400000;
+      let cls = '', label = '';
+      if (diff < 0)       { cls = 'overdue'; label = '期限切れ'; }
+      else if (diff === 0){ cls = 'today';   label = '今日まで'; }
+      else if (diff <= 3) { cls = 'soon';    label = `あと${diff}日`; }
+      else                { label = due.replace(/-/g, '/'); }
+      return `<span class="due-badge ${cls}">📅 ${label}</span>`;
+    }
+
+    function escHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    document.getElementById('taskInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addTask();
+    });
+
+    render();
+  </script>
+</body>
+</html>
